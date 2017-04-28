@@ -11,7 +11,7 @@ type MyTomate struct {
 
 func NewMyTomate() *MyTomate {
 	ret := &MyTomate{}
-	ret.loop()
+	go ret.loop()
 	return ret
 }
 func (t *MyTomate) loop() {
