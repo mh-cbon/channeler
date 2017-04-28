@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -45,6 +46,7 @@ func main() {
 	if flag.NArg() < 2 {
 		panic("wrong usage")
 	}
+	args := flag.Args()
 
 	outPkg := os.Getenv("GOPACKAGE")
 	gopath := filepath.Join(os.Getenv("GOPATH"), "src")
@@ -52,8 +54,8 @@ func main() {
 	pkgToLoad := filepath.Join(oldp[len(gopath)+1:], outPkg)
 	dest := os.Stdout
 
-	o := flag.Args()[0]
-	restargs := flag.Args()[1:]
+	o := args[0]
+	restargs := args[1:]
 
 	prog := getProgram(pkgToLoad)
 	p := prog.Package(pkgToLoad)
@@ -69,6 +71,10 @@ func main() {
 			panic(err)
 		}
 		dest = f
+		defer func() {
+			f.Close()
+			exec.Command("go", "fmt", args[0]).Run()
+		}()
 	}
 
 	fmt.Fprintf(dest, "package %v\n\n", outPkg)
