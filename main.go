@@ -154,7 +154,7 @@ func processType(destName, srcName string, foundCtors map[string]*ast.FuncDecl, 
 			fmt.Fprintf(dest, "	ret.%v = embed\n", srcName)
 		}
 	}
-	fmt.Fprintf(dest, "	ret.loop()\n")
+	fmt.Fprintf(dest, "	go ret.loop()\n")
 	fmt.Fprintf(dest, "	return ret\n")
 	fmt.Fprintf(dest, "}\n")
 	fmt.Fprintf(dest, "func (t *%v) loop(){\n", destName)
