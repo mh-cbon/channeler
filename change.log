@@ -1,4 +1,15 @@
 
+0.0.1-beta3
+
+  * fix methods detection, before it failed to find type matching a poiner input source `*Tomate:...`
+  * fix package detection, before it failed to find the package to read properly.
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 29 Apr 2017 20:42:41 +0200
+
+
+
 0.0.1-beta2
 
   * cli: add -p param to run the program without go generate support
