@@ -182,6 +182,29 @@ func (t *MyTomatePointer) Start() {
 func (t *MyTomatePointer) Stop() {
 	t.stop <- true
 }
+
+// Hello is channeled
+func (t *MyTomatePointer) Hello() {
+	t.ops <- func() {
+		t.embed.Hello()
+	}
+}
+
+// Good is channeled
+func (t *MyTomatePointer) Good() {
+	t.ops <- func() {
+		t.embed.Good()
+	}
+}
+
+// Name is channeled
+func (t *MyTomatePointer) Name(it string) string {
+	var retVar1 string
+	t.ops <- func() {
+		retVar1 = t.embed.Name(it)
+	}
+	return retVar1
+}
 ```
 
 

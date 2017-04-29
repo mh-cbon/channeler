@@ -49,8 +49,11 @@ func main() {
 	args := flag.Args()
 
 	gopath := filepath.Join(os.Getenv("GOPATH"), "src")
-	oldp := os.Getenv("OLDPWD")
-	pkgToLoad := filepath.Join(oldp[len(gopath)+1:], outPkg)
+	pkgToLoad, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	pkgToLoad = pkgToLoad[len(gopath)+1:]
 	dest := os.Stdout
 
 	o := args[0]
@@ -178,7 +181,7 @@ func (t *%v) Stop(){
 		destName)
 	fmt.Fprintln(dest)
 
-	for _, m := range foundMethods[srcName] {
+	for _, m := range foundMethods[srcConcrete] {
 		paramNames := astutil.MethodParamNames(m)
 		receiverName := astutil.ReceiverName(m)
 		methodName := astutil.MethodName(m)
