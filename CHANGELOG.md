@@ -1,5 +1,20 @@
 # Changelog - channeler
 
+### 0.0.1-beta3
+
+__Changes__
+
+- fix methods detection, before it failed to find type matching a poiner input source `*Tomate:...`
+- fix package detection, before it failed to find the package to read properly.
+
+__Contributors__
+
+- mh-cbon
+
+Released by mh-cbon, Sat 29 Apr 2017 -
+[see the diff](https://github.com/mh-cbon/channeler/compare/0.0.1-beta2...0.0.1-beta3#diff)
+______________
+
 ### 0.0.1-beta2
 
 __Changes__
