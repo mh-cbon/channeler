@@ -1,4 +1,17 @@
 
+0.0.1-beta2
+
+  * cli: add -p param to run the program without go generate support
+  * dep: add glide support
+  * cli: refactor to use astutil, fix various cases
+  * demo: update
+
+  - mh-cbon <mh-cbon@users.noreply.github.com>
+
+-- mh-cbon <mh-cbon@users.noreply.github.com>; Sat, 29 Apr 2017 17:44:41 +0200
+
+
+
 0.0.1-beta1
 
   * fix template
