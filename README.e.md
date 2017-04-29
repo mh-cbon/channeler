@@ -12,7 +12,7 @@ LicenseColor: yellow
 # {{toc 5}}
 
 # Install
-{{template "go/install" .}}
+{{template "glide/install" .}}
 
 ## Usage
 
