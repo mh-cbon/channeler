@@ -27,10 +27,12 @@ func main() {
 	var h bool
 	var ver bool
 	var v bool
+	var outPkg string
 	flag.BoolVar(&help, "help", false, "Show help.")
 	flag.BoolVar(&h, "h", false, "Show help.")
 	flag.BoolVar(&ver, "version", false, "Show version.")
 	flag.BoolVar(&v, "v", false, "Show version.")
+	flag.StringVar(&outPkg, "p", "", "Package name of the new code.")
 
 	flag.Parse()
 
@@ -48,7 +50,10 @@ func main() {
 	}
 	args := flag.Args()
 
-	outPkg := os.Getenv("GOPACKAGE")
+	if outPkg == "" {
+		outPkg = os.Getenv("GOPACKAGE")
+	}
+
 	gopath := filepath.Join(os.Getenv("GOPATH"), "src")
 	oldp := os.Getenv("OLDPWD")
 	pkgToLoad := filepath.Join(oldp[len(gopath)+1:], outPkg)
@@ -57,13 +62,12 @@ func main() {
 	o := args[0]
 	restargs := args[1:]
 
-	prog := getProgram(pkgToLoad)
-	p := prog.Package(pkgToLoad)
+	prog := getProgram(pkgToLoad).Package(pkgToLoad)
 	// astPrintPkg(p)
 
-	foundTypes := findTypes(p)
-	foundMethods := findMethods(p)
-	foundCtors := findCtors(p, foundTypes)
+	foundTypes := findTypes(prog)
+	foundMethods := findMethods(prog)
+	foundCtors := findCtors(prog, foundTypes)
 
 	if o != "-" {
 		f, err := os.Create(o)
@@ -105,9 +109,10 @@ func showHelp() {
 	fmt.Println()
 	fmt.Println("Usage")
 	fmt.Println()
-	fmt.Printf("	channeler [out] [...types]\n\n")
+	fmt.Printf("	channeler [-p name] [out] [...types]\n\n")
 	fmt.Printf("	out: 	Output destination of the results, use '-' for stdout.\n")
 	fmt.Printf("	types:	A list of types such as src:dst.\n")
+	fmt.Printf("	-p:			The name of the package output.\n")
 	fmt.Println()
 }
 
