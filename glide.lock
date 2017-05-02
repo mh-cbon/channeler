@@ -1,8 +1,8 @@
 hash: fe24daae315d097a3ff4aa5845b6c0ce97a5e892d5655d2190089449ce50b355
-updated: 2017-04-29T17:33:29.807137129+02:00
+updated: 2017-05-02T12:28:02.541622113+02:00
 imports:
 - name: github.com/mh-cbon/astutil
-  version: 5cb34b7d530f1cf5c738a4c790ed0c0a7e425433
+  version: 75d4e84bec87d9e01ff9510a02a39ce781fa1aeb
 - name: golang.org/x/tools
   version: 2382e3994d48b1d22acc2c86bcad0a2aff028e32
   subpackages:
