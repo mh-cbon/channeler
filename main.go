@@ -183,11 +183,11 @@ func (t *%v) Stop(){
 
 	for _, m := range foundMethods[srcConcrete] {
 		paramNames := astutil.MethodParamNames(m)
-		receiverName := astutil.ReceiverName(m)
+		// receiverName := astutil.ReceiverName(m)
 		methodName := astutil.MethodName(m)
 		varExpr := ""
 		assignExpr := ""
-		callExpr := fmt.Sprintf("%v.embed.%v(%v)", receiverName, methodName, paramNames)
+		callExpr := fmt.Sprintf("%v.embed.%v(%v)", "t", methodName, paramNames)
 		returnExpr := ""
 		methodReturnTypes := astutil.MethodReturnTypes(m)
 		if len(methodReturnTypes) > 0 {
@@ -210,6 +210,7 @@ func (t *%v) Stop(){
 		if err != nil {
 			panic(err)
 		}
+		astutil.SetReceiverName(m, "t")
 		astutil.SetReceiverTypeName(m, destName)
 		astutil.SetReceiverPointer(m, true)
 		m.Body = expr.(*ast.FuncLit).Body
