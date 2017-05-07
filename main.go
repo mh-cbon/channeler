@@ -182,7 +182,8 @@ func (t *%v) Stop(){
 	fmt.Fprintln(dest)
 
 	for _, m := range foundMethods[srcConcrete] {
-		paramNames := astutil.MethodParamNames(m)
+		withEllipse := astutil.MethodHasEllipse(m)
+		paramNames := astutil.MethodParamNamesInvokation(m, withEllipse)
 		// receiverName := astutil.ReceiverName(m)
 		methodName := astutil.MethodName(m)
 		varExpr := ""
@@ -215,6 +216,7 @@ func (t *%v) Stop(){
 		astutil.SetReceiverPointer(m, true)
 		m.Body = expr.(*ast.FuncLit).Body
 		fmt.Fprintf(dest, "// %v is channeled\n", methodName)
+		m.Doc = nil // clear the doc.
 		fmt.Fprintf(dest, "%v\n", astutil.Print(m))
 	}
 
