@@ -9,12 +9,14 @@ type MyTomate struct {
 	embed Tomate
 	ops   chan func()
 	stop  chan bool
+	tick  chan bool
 }
 
 // NewMyTomate constructs a chenneled version of Tomate
 func NewMyTomate() *MyTomate {
 	ret := &MyTomate{
 		ops:  make(chan func()),
+		tick: make(chan bool),
 		stop: make(chan bool),
 	}
 	go ret.Start()
@@ -27,6 +29,7 @@ func (t *MyTomate) Start() {
 		select {
 		case op := <-t.ops:
 			op()
+			t.tick <- true
 		case <-t.stop:
 			return
 		}
@@ -58,6 +61,7 @@ func (t *MyTomate) Name(it string) string {
 	t.ops <- func() {
 		retVar0 = t.embed.Name(it)
 	}
+	<-t.tick
 	return retVar0
 }
 
@@ -66,12 +70,14 @@ type MyTomatePointer struct {
 	embed *Tomate
 	ops   chan func()
 	stop  chan bool
+	tick  chan bool
 }
 
 // NewMyTomatePointer constructs a chenneled version of *Tomate
 func NewMyTomatePointer(n string) *MyTomatePointer {
 	ret := &MyTomatePointer{
 		ops:  make(chan func()),
+		tick: make(chan bool),
 		stop: make(chan bool),
 	}
 	ret.embed = NewTomate(n)
@@ -85,6 +91,7 @@ func (t *MyTomatePointer) Start() {
 		select {
 		case op := <-t.ops:
 			op()
+			t.tick <- true
 		case <-t.stop:
 			return
 		}
@@ -116,5 +123,6 @@ func (t *MyTomatePointer) Name(it string) string {
 	t.ops <- func() {
 		retVar1 = t.embed.Name(it)
 	}
+	<-t.tick
 	return retVar1
 }
