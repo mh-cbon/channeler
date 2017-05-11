@@ -124,6 +124,7 @@ type %v struct{
 	embed %v
 	ops chan func()
 	stop chan bool
+	tick chan bool
 }
 		`, destName, destName, srcName)
 
@@ -148,6 +149,7 @@ type %v struct{
 func New%v(%v) *%v {
 	ret := &%v{
 		ops: make(chan func()),
+		tick: make(chan bool),
 		stop: make(chan bool),
 	}
 `,
@@ -166,6 +168,7 @@ func (t *%v) Start(){
 		select{
 		case op:=<-t.ops:
 			op()
+			t.tick<-true
 		case <-t.stop:
 			return
 		}
@@ -199,12 +202,15 @@ func (t *%v) Stop(){
 			}
 			varExpr = varExpr[:len(varExpr)-2]
 			assignExpr = fmt.Sprintf("%v = ", strings.Join(retVars, ", "))
-			returnExpr = fmt.Sprintf("return %v", strings.Join(retVars, ", "))
+			returnExpr = fmt.Sprintf(`<-t.tick
+				return %v
+				`, strings.Join(retVars, ", "))
 		}
 		sExpr := fmt.Sprintf(`
 	%v
 	t.ops<-func() {%v%v}
 	%v
+
 `, varExpr, assignExpr, callExpr, returnExpr)
 		sExpr = fmt.Sprintf(`func(){%v}`, sExpr)
 		expr, err := parser.ParseExpr(sExpr)
