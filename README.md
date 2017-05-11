@@ -1,6 +1,6 @@
 # channeler
 
-[![travis Status](https://travis-ci.org//mh-cbon/channeler.svg?branch=master)](https://travis-ci.org//mh-cbon/channeler) [![Appveyor Status](https://ci.appveyor.com/api/projects/status//github/mh-cbon/channeler?branch=master&svg=true)](https://ci.appveyor.com/projects//mh-cbon/channeler) [![Go Report Card](https://goreportcard.com/badge/github.com/mh-cbon/channeler)](https://goreportcard.com/report/github.com/mh-cbon/channeler) [![GoDoc](https://godoc.org/github.com/mh-cbon/channeler?status.svg)](http://godoc.org/github.com/mh-cbon/channeler) [![MIT License](http://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![travis Status](https://travis-ci.org/mh-cbon/channeler.svg?branch=master)](https://travis-ci.org/mh-cbon/channeler) [![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/mh-cbon/channeler?branch=master&svg=true)](https://ci.appveyor.com/projects/mh-cbon/channeler) [![Go Report Card](https://goreportcard.com/badge/github.com/mh-cbon/channeler)](https://goreportcard.com/report/github.com/mh-cbon/channeler) [![GoDoc](https://godoc.org/github.com/mh-cbon/channeler?status.svg)](http://godoc.org/github.com/mh-cbon/channeler) [![MIT License](http://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Package channeler is a cli generator to generate channeled version of a type.
 
