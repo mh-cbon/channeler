@@ -21,18 +21,20 @@ LicenseColor: yellow
 ## Cli examples
 
 ```sh
-# Create a channeled version os Tomate to MyTomate
-channeler tomate_gen.go Tomate:MyTomate
+# Create a channeled version of Tomate to MyTomate to stdout
+channeler - demo/Tomate:ChanTomate
+# Create a channeled version of Tomate to MyTomate to gen_test/chantomate.go
+channeler demo/Tomate:gen_test/ChanTomate
 ```
 # API example
 
 Following example demonstates a program using it to generate a channeled version of a type.
 
-#### > {{cat "demo/lib.go" | color "go"}}
+#### > {{cat "demo/main.go" | color "go"}}
 
 Following code is the generated implementation of `Tomate` type.
 
-#### > {{cat "demo/tomate_gen.go" | color "go"}}
+#### > {{cat "demo/mytomate.go" | color "go"}}
 
 
 # Recipes
