@@ -145,6 +145,9 @@ func processType(destName, srcName string, foundCtors map[string]*ast.FuncDecl, 
 	var b bytes.Buffer
 	dest := &b
 
+	srcConcrete := astutil.GetUnpointedType(srcName)
+	dstConcrete := astutil.GetUnpointedType(destName)
+
 	fmt.Fprintf(dest, `
 // %v is channeled.
 type %v struct{
@@ -153,13 +156,12 @@ type %v struct{
 	stop chan bool
 	tick chan bool
 }
-		`, destName, destName, srcName)
+		`, dstConcrete, dstConcrete, srcName)
 
 	ctorParams := ""
 	ctorParamsInvokation := ""
 	ctorName := ""
 	ctorIsPointer := false
-	srcConcrete := astutil.GetUnpointedType(srcName)
 	if x, ok := foundCtors[srcConcrete]; ok {
 		withEllipse := astutil.MethodHasEllipse(x)
 		ctorParamsInvokation = astutil.MethodParamNamesInvokation(x, withEllipse)
@@ -180,7 +182,7 @@ func New%v(%v) *%v {
 		stop: make(chan bool),
 	}
 `,
-		destName, srcName, destName, ctorParams, destName, destName)
+		dstConcrete, srcName, dstConcrete, ctorParams, dstConcrete, dstConcrete)
 
 	if ctorName != "" && astutil.IsAPointedType(srcName) == ctorIsPointer {
 		fmt.Fprintf(dest, "	ret.embed = %v(%v)\n", ctorName, ctorParamsInvokation)
@@ -200,15 +202,15 @@ func (t *%v) Start(){
 			return
 		}
 	}
-}`,
-		destName)
+}
+`, dstConcrete)
 
 	fmt.Fprintln(dest)
 	fmt.Fprintf(dest, `// Stop the main loop
 func (t *%v) Stop(){
 	t.stop <- true
-}`,
-		destName)
+}
+`, dstConcrete)
 	fmt.Fprintln(dest)
 
 	for _, m := range foundMethods[srcConcrete] {
@@ -247,7 +249,7 @@ func (t *%v) Stop(){
 			panic(err)
 		}
 		astutil.SetReceiverName(m, "t")
-		astutil.SetReceiverTypeName(m, destName)
+		astutil.SetReceiverTypeName(m, dstConcrete)
 		astutil.SetReceiverPointer(m, true)
 		m.Body = expr.(*ast.FuncLit).Body
 		fmt.Fprintf(dest, "// %v is channeled\n", methodName)
