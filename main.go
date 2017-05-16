@@ -214,9 +214,8 @@ func New%v(%v) *%v {
 		methodReturnTypes := astutil.MethodReturnTypes(m)
 		if len(methodReturnTypes) > 0 {
 			retVars := astutil.MethodReturnVars(m)
-			varExpr = fmt.Sprintf("var ")
 			for i, r := range retVars {
-				varExpr += r + " " + methodReturnTypes[i] + ", "
+				varExpr += fmt.Sprintf("var %v %v\n", r, methodReturnTypes[i])
 			}
 			varExpr = varExpr[:len(varExpr)-2]
 			assignExpr = fmt.Sprintf("%v = ", strings.Join(retVars, ", "))
