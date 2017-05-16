@@ -107,6 +107,10 @@ package main
 // github.com/mh-cbon/channeler
 // do not edit
 
+import (
+	"encoding/json"
+)
+
 // MyTomate is channeled.
 type MyTomate struct {
 	embed Tomate
@@ -124,24 +128,6 @@ func NewMyTomate() *MyTomate {
 	}
 	go ret.Start()
 	return ret
-}
-
-// Start the main loop
-func (t *MyTomate) Start() {
-	for {
-		select {
-		case op := <-t.ops:
-			op()
-			t.tick <- true
-		case <-t.stop:
-			return
-		}
-	}
-}
-
-// Stop the main loop
-func (t *MyTomate) Stop() {
-	t.stop <- true
 }
 
 // Hello is channeled
@@ -168,6 +154,49 @@ func (t *MyTomate) Name(it string) string {
 	}
 	<-t.tick
 	return retVar0
+}
+
+// Start the main loop
+func (t *MyTomate) Start() {
+	for {
+		select {
+		case op := <-t.ops:
+			op()
+			t.tick <- true
+		case <-t.stop:
+			return
+		}
+	}
+}
+
+// Stop the main loop
+func (t *MyTomate) Stop() {
+	t.stop <- true
+}
+
+//UnmarshalJSON JSON unserializes MyTomate
+func (t *MyTomate) UnmarshalJSON(b []byte) error {
+	var embed Tomate
+	var err error
+	t.ops <- func() {
+		err = json.Unmarshal(b, &embed)
+		if err == nil {
+			t.embed = embed
+		}
+	}
+	<-t.tick
+	return err
+}
+
+//MarshalJSON JSON serializes MyTomate
+func (t *MyTomate) MarshalJSON() ([]byte, error) {
+	var ret []byte
+	var err error
+	t.ops <- func() {
+		ret, err = json.Marshal(t.embed)
+	}
+	<-t.tick
+	return ret, err
 }
 ```
 

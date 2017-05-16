@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/tools/go/loader"
+
 	"github.com/mh-cbon/astutil"
 	"github.com/mh-cbon/channeler/utils"
 )
@@ -69,10 +71,8 @@ func main() {
 			log.Println("Skipped ", srcName)
 			continue
 		}
-		prog := astutil.GetProgramFast(toImport).Package(toImport)
-		foundTypes := astutil.FindTypes(prog)
-		foundMethods := astutil.FindMethods(prog)
-		foundCtors := astutil.FindCtors(prog, foundTypes)
+		prog := astutil.GetProgramFast(toImport)
+		pkg := prog.Package(toImport)
 
 		fileOut := filesOut.Get(todo.ToPath)
 		fileOut.PkgName = outPkg
@@ -88,7 +88,10 @@ func main() {
 			fileOut.AddImport(todo.FromPkgPath, "")
 		}
 
-		res := processType(destName, srcName, foundCtors, foundMethods)
+		res, extraImports := processType(destName, srcName, pkg)
+		for _, i := range extraImports {
+			fileOut.AddImport(i, "")
+		}
 		io.Copy(&fileOut.Body, &res)
 	}
 
@@ -140,13 +143,19 @@ func showHelp() {
 	fmt.Println()
 }
 
-func processType(destName, srcName string, foundCtors map[string]*ast.FuncDecl, foundMethods map[string][]*ast.FuncDecl) bytes.Buffer {
+func processType(destName, srcName string, pkg *loader.PackageInfo) (bytes.Buffer, []string) {
 
+	foundTypes := astutil.FindTypes(pkg)
+	foundMethods := astutil.FindMethods(pkg)
+	foundCtors := astutil.FindCtors(pkg, foundTypes)
+
+	extraImports := []string{}
 	var b bytes.Buffer
 	dest := &b
 
 	srcConcrete := astutil.GetUnpointedType(srcName)
 	dstConcrete := astutil.GetUnpointedType(destName)
+	dstStar := astutil.GetPointedType(destName)
 
 	fmt.Fprintf(dest, `
 // %v is channeled.
@@ -191,36 +200,16 @@ func New%v(%v) *%v {
 	fmt.Fprintf(dest, "	return ret\n")
 	fmt.Fprintf(dest, "}\n")
 
-	fmt.Fprintf(dest, `// Start the main loop
-func (t *%v) Start(){
-	for {
-		select{
-		case op:=<-t.ops:
-			op()
-			t.tick<-true
-		case <-t.stop:
-			return
-		}
-	}
-}
-`, dstConcrete)
-
-	fmt.Fprintln(dest)
-	fmt.Fprintf(dest, `// Stop the main loop
-func (t *%v) Stop(){
-	t.stop <- true
-}
-`, dstConcrete)
-	fmt.Fprintln(dest)
+	receiverName := "t"
 
 	for _, m := range foundMethods[srcConcrete] {
 		withEllipse := astutil.MethodHasEllipse(m)
 		paramNames := astutil.MethodParamNamesInvokation(m, withEllipse)
-		// receiverName := astutil.ReceiverName(m)
+		receiverName = astutil.ReceiverName(m)
 		methodName := astutil.MethodName(m)
 		varExpr := ""
 		assignExpr := ""
-		callExpr := fmt.Sprintf("%v.embed.%v(%v)", "t", methodName, paramNames)
+		callExpr := fmt.Sprintf("%v.embed.%v(%v)", receiverName, methodName, paramNames)
 		returnExpr := ""
 		methodReturnTypes := astutil.MethodReturnTypes(m)
 		if len(methodReturnTypes) > 0 {
@@ -237,18 +226,18 @@ func (t *%v) Stop(){
 		}
 		sExpr := fmt.Sprintf(`
 	%v
-	t.ops<-func() {%v%v}
+	%v.ops<-func() {%v%v}
 	<-t.tick
 	%v
 
-`, varExpr, assignExpr, callExpr, returnExpr)
+`, varExpr, receiverName, assignExpr, callExpr, returnExpr)
 
 		sExpr = fmt.Sprintf(`func(){%v}`, sExpr)
 		expr, err := parser.ParseExpr(sExpr)
 		if err != nil {
 			panic(err)
 		}
-		astutil.SetReceiverName(m, "t")
+		// astutil.SetReceiverName(m, "t")
 		astutil.SetReceiverTypeName(m, dstConcrete)
 		astutil.SetReceiverPointer(m, true)
 		m.Body = expr.(*ast.FuncLit).Body
@@ -257,5 +246,68 @@ func (t *%v) Stop(){
 		fmt.Fprintf(dest, "%v\n", astutil.Print(m))
 	}
 
-	return b
+	fmt.Fprintf(dest, `// Start the main loop
+	func (%v *%v) Start(){
+		for {
+			select{
+			case op:=<-%v.ops:
+				op()
+				%v.tick<-true
+			case <-%v.stop:
+				return
+			}
+		}
+	}
+	`, receiverName, dstConcrete, receiverName, receiverName, receiverName)
+
+	fmt.Fprintln(dest)
+	fmt.Fprintf(dest, `// Stop the main loop
+	func (%v *%v) Stop(){
+		%v.stop <- true
+	}
+	`, receiverName, dstConcrete, receiverName)
+	fmt.Fprintln(dest)
+
+	if !astutil.HasMethod(pkg, srcConcrete, "UnmarshalJSON") ||
+		!astutil.HasMethod(pkg, srcConcrete, "MarshalJSON") {
+		extraImports = append(extraImports, "encoding/json")
+	}
+
+	// Add marshalling capabilities
+	if astutil.HasMethod(pkg, srcConcrete, "UnmarshalJSON") == false {
+		fmt.Fprintf(dest, `
+			//UnmarshalJSON JSON unserializes %v
+			func (%v %v) UnmarshalJSON(b []byte) error {
+				var embed %v
+				var err error
+				t.ops <- func() {
+					err = json.Unmarshal(b, &embed)
+					if err == nil {
+						t.embed = embed
+					}
+				}
+				<-t.tick
+				return err
+			}
+			`, dstConcrete, receiverName, dstStar, srcName)
+		fmt.Fprintln(dest)
+	}
+
+	if astutil.HasMethod(pkg, srcConcrete, "MarshalJSON") == false {
+		fmt.Fprintf(dest, `
+				//MarshalJSON JSON serializes %v
+				func (%v %v) MarshalJSON() ([]byte, error) {
+					var ret []byte
+					var err error
+					t.ops <- func() {
+						ret, err = json.Marshal(t.embed)
+					}
+					<-t.tick
+					return ret, err
+				}
+				`, dstConcrete, receiverName, dstStar)
+		fmt.Fprintln(dest)
+	}
+
+	return b, extraImports
 }
