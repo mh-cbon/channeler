@@ -8,7 +8,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"io"
-	"log"
 	"path/filepath"
 	"strings"
 
@@ -67,9 +66,8 @@ func main() {
 		srcName := todo.FromTypeName
 		destName := todo.ToTypeName
 		toImport := todo.FromPkgPath
-		if todo.FromPkgPath == "" {
-			log.Println("Skipped ", srcName)
-			continue
+		if toImport == "" {
+			toImport = utils.GetPkgToLoad()
 		}
 		prog := astutil.GetProgramFast(toImport)
 		pkg := prog.Package(toImport)
@@ -145,6 +143,13 @@ func showHelp() {
 
 func processType(destName, srcName string, pkg *loader.PackageInfo) (bytes.Buffer, []string) {
 
+	srcConcrete := astutil.GetUnpointedType(srcName)
+	dstConcrete := astutil.GetUnpointedType(destName)
+	dstStar := astutil.GetPointedType(destName)
+
+	hasUnmarshal := astutil.HasMethod(pkg, srcConcrete, "UnmarshalJSON")
+	hasMarshal := astutil.HasMethod(pkg, srcConcrete, "MarshalJSON")
+
 	foundTypes := astutil.FindTypes(pkg)
 	foundMethods := astutil.FindMethods(pkg)
 	foundCtors := astutil.FindCtors(pkg, foundTypes)
@@ -152,10 +157,6 @@ func processType(destName, srcName string, pkg *loader.PackageInfo) (bytes.Buffe
 	extraImports := []string{}
 	var b bytes.Buffer
 	dest := &b
-
-	srcConcrete := astutil.GetUnpointedType(srcName)
-	dstConcrete := astutil.GetUnpointedType(destName)
-	dstStar := astutil.GetPointedType(destName)
 
 	fmt.Fprintf(dest, `
 // %v is channeled.
@@ -217,7 +218,7 @@ func New%v(%v) *%v {
 			for i, r := range retVars {
 				varExpr += fmt.Sprintf("var %v %v\n", r, methodReturnTypes[i])
 			}
-			varExpr = varExpr[:len(varExpr)-2]
+			varExpr = varExpr[:len(varExpr)-1]
 			assignExpr = fmt.Sprintf("%v = ", strings.Join(retVars, ", "))
 			returnExpr = fmt.Sprintf(`
 				return %v
@@ -267,13 +268,12 @@ func New%v(%v) *%v {
 	`, receiverName, dstConcrete, receiverName)
 	fmt.Fprintln(dest)
 
-	if !astutil.HasMethod(pkg, srcConcrete, "UnmarshalJSON") ||
-		!astutil.HasMethod(pkg, srcConcrete, "MarshalJSON") {
+	if !hasUnmarshal || !hasMarshal {
 		extraImports = append(extraImports, "encoding/json")
 	}
 
 	// Add marshalling capabilities
-	if astutil.HasMethod(pkg, srcConcrete, "UnmarshalJSON") == false {
+	if hasUnmarshal == false {
 		fmt.Fprintf(dest, `
 			//UnmarshalJSON JSON unserializes %v
 			func (%v %v) UnmarshalJSON(b []byte) error {
@@ -292,7 +292,7 @@ func New%v(%v) *%v {
 		fmt.Fprintln(dest)
 	}
 
-	if astutil.HasMethod(pkg, srcConcrete, "MarshalJSON") == false {
+	if hasMarshal == false {
 		fmt.Fprintf(dest, `
 				//MarshalJSON JSON serializes %v
 				func (%v %v) MarshalJSON() ([]byte, error) {
